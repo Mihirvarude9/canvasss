@@ -165,6 +165,70 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
     }
   };
 
+  // Lightweight image component that fetches as blob and renders base64
+  const LibraryImage = ({ url, alt, onLoaded, onFailed }: { url: string; alt: string; onLoaded?: () => void; onFailed?: (e: any) => void; }) => {
+    const [dataUrl, setDataUrl] = useState<string | null>(null);
+    const [errored, setErrored] = useState<boolean>(false);
+
+    useEffect(() => {
+      let aborted = false;
+      setErrored(false);
+      setDataUrl(null);
+
+      const load = async () => {
+        try {
+          const res = await fetch(url, {
+            mode: 'cors',
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (aborted) return;
+            setDataUrl(reader.result as string);
+            onLoaded && onLoaded();
+          };
+          reader.onerror = (e) => {
+            if (aborted) return;
+            setErrored(true);
+            onFailed && onFailed(e);
+          };
+          reader.readAsDataURL(blob);
+        } catch (e) {
+          if (aborted) return;
+          setErrored(true);
+          onFailed && onFailed(e);
+        }
+      };
+
+      load();
+      return () => {
+        aborted = true;
+      };
+    }, [url]);
+
+    if (errored) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-muted text-xs text-muted-foreground">
+          failed
+        </div>
+      );
+    }
+
+    if (!dataUrl) {
+      return <div className="w-full h-full animate-pulse bg-muted" />;
+    }
+
+    return (
+      <img
+        src={dataUrl}
+        alt={alt}
+        className="w-full h-full object-cover"
+      />
+    );
+  };
+
   const handleSaveAllGenerated = async () => {
     try {
       const generatedAssets = assets.filter(asset => 
@@ -324,20 +388,13 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 onDragStart={(e) => handleDragStart(asset, e)}
                 onClick={() => handleAddToCanvas(asset)}
               >
-                <img
-                  src={mainImageUrl}
+                <LibraryImage
+                  url={mainImageUrl}
                   alt={asset.name}
-                  className="w-full h-full object-cover"
-                  onLoad={() => {
-                    console.log('✅ Library image loaded:', mainImageUrl);
-                  }}
-                  onError={(e) => {
-                    console.warn('⚠️ Library image failed to load:', mainImageUrl);
+                  onLoaded={() => console.log('✅ Library image loaded (b64):', mainImageUrl)}
+                  onFailed={(e) => {
+                    console.warn('⚠️ Library image failed (b64):', mainImageUrl);
                     console.warn('⚠️ Error details:', e);
-                    console.warn('⚠️ Error type:', e.type);
-                    console.warn('⚠️ Error target:', e.target);
-                    console.warn('⚠️ Error message:', e.message);
-                    console.warn('⚠️ Error stack:', e.stack);
                   }}
                 />
                 {aiGeneratedAssetIds.includes(asset.id) && (
