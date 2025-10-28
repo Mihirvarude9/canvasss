@@ -13,7 +13,45 @@ import { ImageResizer } from '@/components/ImageResizer';
 import { CanvasModeSelector } from '@/components/CanvasModeSelector';
 import { MiniChatWindow } from '@/components/MiniChatWindow';
 
-// CORS will be handled in the image loading function
+// Utility function to load images with proper CORS handling
+const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
+  return new Promise((resolve, reject) => {
+    // First, try to load with CORS
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      // Image loaded successfully with CORS, now create Fabric image
+      FabricImage.fromURL(url, {
+        crossOrigin: 'anonymous',
+      }).then(resolve).catch((error) => {
+        console.error('FabricImage.fromURL failed with CORS:', error);
+        // Fallback: try without CORS
+        FabricImage.fromURL(url, {
+          crossOrigin: undefined,
+        }).then(resolve).catch(reject);
+      });
+    };
+    
+    img.onerror = () => {
+      console.warn('Image failed to load with CORS, trying without CORS...');
+      // Fallback: try without CORS
+      FabricImage.fromURL(url, {
+        crossOrigin: undefined,
+      }).then(resolve).catch((error) => {
+        console.error('FabricImage.fromURL failed without CORS:', error);
+        reject(error);
+      });
+    };
+    
+    // Add a timeout to prevent hanging
+    setTimeout(() => {
+      reject(new Error('Image loading timeout'));
+    }, 10000);
+    
+    img.src = url;
+  });
+};
 
 export const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -561,9 +599,7 @@ export const Canvas = () => {
                 return;
               }
 
-              FabricImage.fromURL(node.url, {
-                crossOrigin: 'anonymous',
-              }).then((img) => {
+              loadImageWithCORS(node.url).then((img) => {
                 if (!img || !img.width || !img.height) {
                   console.error('Image failed to load or has invalid dimensions:', node.url);
                   return;
