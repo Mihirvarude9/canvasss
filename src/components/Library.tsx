@@ -316,7 +316,10 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
               .map((asset) => {
                 const thumbnailUrl = apiClient.getThumbnailUrl(asset);
                 const mainImageUrl = apiClient.getAssetUrl(asset);
-                console.log('🖼️ Rendering asset:', asset.name, 'thumbnail:', thumbnailUrl, 'main:', mainImageUrl);
+                // Add cache-busting parameter to force fresh requests
+                const cacheBustedThumbnailUrl = `${thumbnailUrl}?v=${Date.now()}`;
+                const cacheBustedMainUrl = `${mainImageUrl}?v=${Date.now()}`;
+                console.log('🖼️ Rendering asset:', asset.name, 'thumbnail:', cacheBustedThumbnailUrl, 'main:', cacheBustedMainUrl);
                 return (
               <div
                 key={asset.id}
@@ -326,20 +329,22 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 onClick={() => handleAddToCanvas(asset)}
               >
                 <img
-                  src={thumbnailUrl}
+                  src={cacheBustedThumbnailUrl}
                   alt={asset.name}
                   className="w-full h-full object-cover"
                   onLoad={() => {
-                    console.log('✅ Library thumbnail loaded:', thumbnailUrl);
+                    console.log('✅ Library thumbnail loaded:', cacheBustedThumbnailUrl);
                   }}
                   onError={(e) => {
-                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', thumbnailUrl);
+                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', cacheBustedThumbnailUrl);
                     console.warn('⚠️ Error details:', e);
+                    console.warn('⚠️ Error type:', e.type);
+                    console.warn('⚠️ Error target:', e.target);
                     // Fallback to main image if thumbnail fails to load
                     const target = e.target as HTMLImageElement;
-                    console.log('🔄 Falling back to main image:', mainImageUrl);
-                    if (target.src !== mainImageUrl) {
-                      target.src = mainImageUrl;
+                    console.log('🔄 Falling back to main image:', cacheBustedMainUrl);
+                    if (target.src !== cacheBustedMainUrl) {
+                      target.src = cacheBustedMainUrl;
                     }
                   }}
                 />
