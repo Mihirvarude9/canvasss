@@ -13,7 +13,41 @@ import { ImageResizer } from '@/components/ImageResizer';
 import { CanvasModeSelector } from '@/components/CanvasModeSelector';
 import { MiniChatWindow } from '@/components/MiniChatWindow';
 
-// Utility function to convert image URL to base64
+// Utility function to fetch image as blob and convert to base64
+const fetchImageAsBase64 = async (url: string): Promise<string> => {
+  try {
+    console.log('🌐 Fetching image as blob:', url);
+    const response = await fetch(url, {
+      mode: 'cors',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    console.log('✅ Image fetched as blob successfully');
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        console.log('✅ Image converted to base64 via fetch');
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('Failed to read blob as base64'));
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn('⚠️ Fetch method failed, trying canvas method...', error);
+    throw error;
+  }
+};
+
+// Utility function to convert image URL to base64 using canvas
 const imageToBase64 = async (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -33,6 +67,7 @@ const imageToBase64 = async (url: string): Promise<string> => {
       
       try {
         const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        console.log('✅ Image converted to base64 via canvas');
         resolve(base64);
       } catch (error) {
         reject(error);
@@ -56,6 +91,7 @@ const imageToBase64 = async (url: string): Promise<string> => {
         
         try {
           const base64 = canvas.toDataURL('image/jpeg', 0.9);
+          console.log('✅ Image converted to base64 via canvas (no CORS)');
           resolve(base64);
         } catch (error) {
           reject(error);
@@ -69,12 +105,12 @@ const imageToBase64 = async (url: string): Promise<string> => {
   });
 };
 
-// Utility function to load images with base64 conversion
+// Utility function to load images with multiple fallback methods
 const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
   try {
     console.log('🖼️ Attempting to load image:', url);
     
-    // First try direct loading
+    // Method 1: Try direct loading with CORS
     try {
       const fabricImg = await FabricImage.fromURL(url, {
         crossOrigin: 'anonymous',
@@ -82,17 +118,42 @@ const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
       console.log('✅ FabricImage created directly with CORS:', url);
       return fabricImg;
     } catch (error) {
-      console.warn('⚠️ Direct loading failed, trying base64 conversion...', error);
+      console.warn('⚠️ Direct loading with CORS failed, trying fetch method...', error);
     }
     
-    // Fallback: convert to base64 first
-    console.log('🔄 Converting image to base64...');
-    const base64 = await imageToBase64(url);
-    console.log('✅ Image converted to base64 successfully');
+    // Method 2: Try fetch + base64 conversion
+    try {
+      console.log('🔄 Trying fetch method...');
+      const base64 = await fetchImageAsBase64(url);
+      const fabricImg = await FabricImage.fromURL(base64);
+      console.log('✅ FabricImage created from fetch+base64:', url);
+      return fabricImg;
+    } catch (error) {
+      console.warn('⚠️ Fetch method failed, trying canvas method...', error);
+    }
     
-    const fabricImg = await FabricImage.fromURL(base64);
-    console.log('✅ FabricImage created from base64:', url);
-    return fabricImg;
+    // Method 3: Try canvas + base64 conversion
+    try {
+      console.log('🔄 Trying canvas method...');
+      const base64 = await imageToBase64(url);
+      const fabricImg = await FabricImage.fromURL(base64);
+      console.log('✅ FabricImage created from canvas+base64:', url);
+      return fabricImg;
+    } catch (error) {
+      console.warn('⚠️ Canvas method failed, trying direct without CORS...', error);
+    }
+    
+    // Method 4: Last resort - direct without CORS
+    try {
+      const fabricImg = await FabricImage.fromURL(url, {
+        crossOrigin: undefined,
+      });
+      console.log('✅ FabricImage created directly without CORS:', url);
+      return fabricImg;
+    } catch (error) {
+      console.error('❌ All image loading methods failed:', error);
+      throw error;
+    }
     
   } catch (error) {
     console.error('❌ All image loading methods failed:', error);
