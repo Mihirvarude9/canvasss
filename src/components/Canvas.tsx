@@ -16,38 +16,65 @@ import { MiniChatWindow } from '@/components/MiniChatWindow';
 // Utility function to load images with proper CORS handling
 const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
   return new Promise((resolve, reject) => {
+    console.log('🖼️ Attempting to load image:', url);
+    
     // First, try to load with CORS
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
+      console.log('✅ Image preloaded successfully with CORS:', url);
       // Image loaded successfully with CORS, now create Fabric image
       FabricImage.fromURL(url, {
         crossOrigin: 'anonymous',
-      }).then(resolve).catch((error) => {
-        console.error('FabricImage.fromURL failed with CORS:', error);
+      }).then((fabricImg) => {
+        console.log('✅ FabricImage created successfully:', url);
+        resolve(fabricImg);
+      }).catch((error) => {
+        console.error('❌ FabricImage.fromURL failed with CORS:', error);
         // Fallback: try without CORS
         FabricImage.fromURL(url, {
           crossOrigin: undefined,
-        }).then(resolve).catch(reject);
+        }).then((fabricImg) => {
+          console.log('✅ FabricImage created without CORS:', url);
+          resolve(fabricImg);
+        }).catch(reject);
       });
     };
     
-    img.onerror = () => {
-      console.warn('Image failed to load with CORS, trying without CORS...');
+    img.onerror = (error) => {
+      console.warn('⚠️ Image failed to load with CORS, trying without CORS...', error);
       // Fallback: try without CORS
       FabricImage.fromURL(url, {
         crossOrigin: undefined,
-      }).then(resolve).catch((error) => {
-        console.error('FabricImage.fromURL failed without CORS:', error);
+      }).then((fabricImg) => {
+        console.log('✅ FabricImage created without CORS fallback:', url);
+        resolve(fabricImg);
+      }).catch((error) => {
+        console.error('❌ FabricImage.fromURL failed without CORS:', error);
         reject(error);
       });
     };
     
     // Add a timeout to prevent hanging
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
+      console.error('⏰ Image loading timeout:', url);
       reject(new Error('Image loading timeout'));
-    }, 10000);
+    }, 15000);
+    
+    // Clear timeout on success
+    const originalOnload = img.onload;
+    const originalOnerror = img.onerror;
+    
+    img.onload = (e) => {
+      clearTimeout(timeout);
+      originalOnload?.call(img, e);
+    };
+    
+    img.onerror = (e) => {
+      clearTimeout(timeout);
+      originalOnerror?.call(img, e);
+    };
     
     img.src = url;
   });
