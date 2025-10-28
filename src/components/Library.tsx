@@ -315,9 +315,7 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
               })
               .map((asset) => {
                 const mainImageUrl = apiClient.getAssetUrl(asset);
-                // Add cache-busting parameter to force fresh requests
-                const cacheBustedMainUrl = `${mainImageUrl}?v=${Date.now()}`;
-                console.log('🖼️ Rendering asset:', asset.name, 'main:', cacheBustedMainUrl);
+                console.log('🖼️ Rendering asset:', asset.name, 'main:', mainImageUrl);
                 return (
               <div
                 key={asset.id}
@@ -327,18 +325,19 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 onClick={() => handleAddToCanvas(asset)}
               >
                 <img
-                  src={cacheBustedMainUrl}
+                  src={mainImageUrl}
                   alt={asset.name}
                   className="w-full h-full object-cover"
-                  crossOrigin="anonymous"
                   onLoad={() => {
-                    console.log('✅ Library image loaded:', cacheBustedMainUrl);
+                    console.log('✅ Library image loaded:', mainImageUrl);
                   }}
                   onError={(e) => {
-                    console.warn('⚠️ Library image failed to load:', cacheBustedMainUrl);
+                    console.warn('⚠️ Library image failed to load:', mainImageUrl);
                     console.warn('⚠️ Error details:', e);
                     console.warn('⚠️ Error type:', e.type);
                     console.warn('⚠️ Error target:', e.target);
+                    console.warn('⚠️ Error message:', e.message);
+                    console.warn('⚠️ Error stack:', e.stack);
                   }}
                 />
                 {aiGeneratedAssetIds.includes(asset.id) && (
