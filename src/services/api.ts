@@ -342,10 +342,8 @@ class ApiClient {
   }
 
   getThumbnailUrl(asset: Asset): string {
-    if (asset.thumbUrl.startsWith('http')) {
-      return asset.thumbUrl;
-    }
-    return `${this.baseURL.replace('/api', '')}${asset.thumbUrl}`;
+    // Always use the main image URL for thumbnails to avoid separate thumbnail loading issues
+    return this.getAssetUrl(asset);
   }
 }
 
