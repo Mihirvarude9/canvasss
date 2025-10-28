@@ -300,7 +300,11 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 const bGen = aiGeneratedAssetIds.includes(b.id) ? 0 : 1;
                 return aGen - bGen; // generated first
               })
-              .map((asset) => (
+              .map((asset) => {
+                const thumbnailUrl = apiClient.getThumbnailUrl(asset);
+                const mainImageUrl = apiClient.getAssetUrl(asset);
+                console.log('🖼️ Rendering asset:', asset.name, 'thumbnail:', thumbnailUrl, 'main:', mainImageUrl);
+                return (
               <div
                 key={asset.id}
                 className="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all"
@@ -309,18 +313,21 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 onClick={() => handleAddToCanvas(asset)}
               >
                 <img
-                  src={apiClient.getThumbnailUrl(asset)}
+                  src={thumbnailUrl}
                   alt={asset.name}
                   className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
                   onLoad={() => {
-                    console.log('✅ Library thumbnail loaded:', apiClient.getThumbnailUrl(asset));
+                    console.log('✅ Library thumbnail loaded:', thumbnailUrl);
                   }}
                   onError={(e) => {
-                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', apiClient.getThumbnailUrl(asset));
+                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', thumbnailUrl);
+                    console.warn('⚠️ Error details:', e);
                     // Fallback to main image if thumbnail fails to load
                     const target = e.target as HTMLImageElement;
-                    if (target.src !== apiClient.getAssetUrl(asset)) {
-                      target.src = apiClient.getAssetUrl(asset);
+                    console.log('🔄 Falling back to main image:', mainImageUrl);
+                    if (target.src !== mainImageUrl) {
+                      target.src = mainImageUrl;
                     }
                   }}
                 />
@@ -347,7 +354,8 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                   <p className="text-xs text-white truncate">{asset.name}</p>
                 </div>
               </div>
-            ))}
+                );
+              })}
           </div>
         )}
       </div>
