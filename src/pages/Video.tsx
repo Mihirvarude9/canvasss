@@ -7,12 +7,8 @@ import { VideoSelector } from '@/components/VideoSelector';
 import { useVideoStore } from '@/store/videoStore';
 
 const Video = () => {
-  const { 
-    selectedVideos,
-    generateVideo,
-    isLoading,
-    error
-  } = useVideoStore();
+  // Video store is used by child components
+  useVideoStore();
 
   useEffect(() => {
     // Load video assets when component mounts
