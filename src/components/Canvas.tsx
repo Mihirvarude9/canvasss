@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Canvas as FabricCanvas, Image as FabricImage, FabricObject, Point } from 'fabric';
-import { useCanvasStore, type Asset } from '@/store/canvasStore';
+import { useCanvasStore } from '@/store/canvasStore';
+import { type Asset } from '@/services/types';
 import { useAssets } from '@/hooks/useAssets';
 import { apiClient } from '@/services/api';
 import { Slider } from '@/components/ui/slider';
@@ -12,11 +13,7 @@ import { ImageResizer } from '@/components/ImageResizer';
 import { CanvasModeSelector } from '@/components/CanvasModeSelector';
 import { MiniChatWindow } from '@/components/MiniChatWindow';
 
-// Configure Fabric.js for CORS globally
-if (typeof window !== 'undefined') {
-  (window as any).fabric = (window as any).fabric || {};
-  (window as any).fabric.Image.prototype.crossOrigin = 'anonymous';
-}
+// CORS will be handled in the image loading function
 
 export const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -213,14 +210,14 @@ export const Canvas = () => {
                   const screenX = centerX + canvasRect.left;
                   const screenY = centerY + canvasRect.top;
                   
-                  console.log('🎯 Opening mini chat for image:', selectedNode.name);
+                  console.log('🎯 Opening mini chat for image:', selectedNode.id);
                   console.log('📍 Chat position:', { screenX, screenY, centerX, centerY });
                   
                   setSelectedImageForChat({
                     id: selectedNode.id,
                     url: selectedNode.url,
                     assetId: selectedNode.assetId,
-                    name: selectedNode.name || 'Selected Image'
+                    name: 'Selected Image'
                   });
                   setChatPosition({
                     x: screenX,
@@ -250,7 +247,7 @@ export const Canvas = () => {
                   id: selectedNode.id,
                   url: selectedNode.url,
                   assetId: selectedNode.assetId,
-                  name: selectedNode.name || 'Selected Image'
+                  name: 'Selected Image'
                 });
               }
             } else {
@@ -564,48 +561,38 @@ export const Canvas = () => {
                 return;
               }
 
-              // Preload image with CORS to ensure it's accessible
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              img.onload = () => {
-                FabricImage.fromURL(node.url, {
-                  crossOrigin: 'anonymous',
-                }).then((fabricImg) => {
-                  if (!fabricImg || !fabricImg.width || !fabricImg.height) {
-                    console.error('Image failed to load or has invalid dimensions:', node.url);
-                    return;
-                  }
-                  
-                  console.log('✅ Image loaded successfully:', node.url, 'dimensions:', fabricImg.width, 'x', fabricImg.height);
-                  
-                  fabricImg.set({
-                    left: node.x,
-                    top: node.y,
-                    scaleX: node.width / fabricImg.width,
-                    scaleY: node.height / fabricImg.height,
-                    angle: node.rotation,
-                    opacity: node.opacity,
-                    selectable: !node.locked,
-                    data: { id: node.id },
-                  });
-                  
-                  canvas.add(fabricImg);
-                  objectMap.set(node.id, fabricImg);
-                  canvas.renderAll();
-                  console.log('✅ Added new image to canvas:', node.id, 'at position:', node.x, node.y);
-                }).catch((error) => {
-                  console.error('Error loading image:', error, node.url);
-                  // Don't show toast for every failed image to avoid spam
-                  if (error.name !== 'NotFoundError') {
-                    toast.error('Failed to load image');
-                  }
+              FabricImage.fromURL(node.url, {
+                crossOrigin: 'anonymous',
+              }).then((img) => {
+                if (!img || !img.width || !img.height) {
+                  console.error('Image failed to load or has invalid dimensions:', node.url);
+                  return;
+                }
+                
+                console.log('✅ Image loaded successfully:', node.url, 'dimensions:', img.width, 'x', img.height);
+                
+                img.set({
+                  left: node.x,
+                  top: node.y,
+                  scaleX: node.width / img.width,
+                  scaleY: node.height / img.height,
+                  angle: node.rotation,
+                  opacity: node.opacity,
+                  selectable: !node.locked,
+                  data: { id: node.id },
                 });
-              };
-              img.onerror = () => {
-                console.error('Failed to preload image:', node.url);
-                toast.error('Failed to load image');
-              };
-              img.src = node.url;
+                
+                canvas.add(img);
+                objectMap.set(node.id, img);
+                canvas.renderAll();
+                console.log('✅ Added new image to canvas:', node.id, 'at position:', node.x, node.y);
+              }).catch((error) => {
+                console.error('Error loading image:', error, node.url);
+                // Don't show toast for every failed image to avoid spam
+                if (error.name !== 'NotFoundError') {
+                  toast.error('Failed to load image');
+                }
+              });
             }
           }
         } catch (error) {
