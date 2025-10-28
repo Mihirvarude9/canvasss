@@ -28,6 +28,19 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
     loadAssets();
   }, [loadAssets]);
 
+  // Test image loading
+  useEffect(() => {
+    const testImage = new Image();
+    testImage.crossOrigin = 'anonymous';
+    testImage.onload = () => {
+      console.log('✅ Test image loaded successfully');
+    };
+    testImage.onerror = (e) => {
+      console.error('❌ Test image failed to load:', e);
+    };
+    testImage.src = 'https://cycloidal-enrico-nonremedially.ngrok-free.dev/uploads/thumbnails/oQA0IVXLGwKKxI379WDdD-thumb.jpg';
+  }, []);
+
   // Keep activeTab in sync with parent prop (e.g., switching between pages)
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -316,7 +329,6 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                   src={thumbnailUrl}
                   alt={asset.name}
                   className="w-full h-full object-cover"
-                  crossOrigin="anonymous"
                   onLoad={() => {
                     console.log('✅ Library thumbnail loaded:', thumbnailUrl);
                   }}
