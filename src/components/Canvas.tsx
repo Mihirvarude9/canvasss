@@ -78,8 +78,16 @@ export const Canvas = () => {
   const handleOpenImageResizer = () => { setImageResizerOpen(true); closeContextMenu(); };
 
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
+    console.log('🎨 Canvas useEffect triggered');
+    console.log('🎨 canvasRef.current:', canvasRef.current);
+    console.log('🎨 containerRef.current:', containerRef.current);
+    
+    if (!canvasRef.current || !containerRef.current) {
+      console.log('❌ Canvas or container ref not ready yet');
+      return;
+    }
 
+    console.log('🎨 Initializing Fabric Canvas...');
     const container = containerRef.current;
     const canvas = new FabricCanvas(canvasRef.current, {
       width: container.clientWidth,

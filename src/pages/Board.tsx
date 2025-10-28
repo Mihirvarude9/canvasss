@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 const Board = () => {
+  console.log('🎨 Board component rendering');
   const [frameSize, setFrameSize] = useState<FrameSize>(FRAME_SIZES[0]);
   const navigate = useNavigate();
   
@@ -107,6 +108,7 @@ const Board = () => {
   };
 
   if (error) {
+    console.error('❌ Board component showing error state:', error);
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

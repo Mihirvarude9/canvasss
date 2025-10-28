@@ -5,6 +5,18 @@ import { ArrowRight, Sparkles, Grid3x3, Layers } from 'lucide-react';
 const Index = () => {
   const navigate = useNavigate();
 
+  const handleGetStarted = () => {
+    console.log('🚀 Get Started button clicked');
+    console.log('🌐 Navigating to /board');
+    navigate('/board');
+  };
+
+  const handleLaunchCanvas = () => {
+    console.log('🎨 Launch Canvas button clicked');
+    console.log('🌐 Navigating to /board');
+    navigate('/board');
+  };
+
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
       {/* Header */}
@@ -16,7 +28,7 @@ const Index = () => {
             </div>
             <span className="text-xl font-bold">WildBoard</span>
           </div>
-          <Button onClick={() => navigate('/board')} size="lg">
+          <Button onClick={handleGetStarted} size="lg">
             Get Started
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
@@ -39,7 +51,7 @@ const Index = () => {
           </div>
 
           <div className="flex items-center justify-center gap-4">
-            <Button onClick={() => navigate('/board')} size="lg" className="text-lg px-8 py-6">
+            <Button onClick={handleLaunchCanvas} size="lg" className="text-lg px-8 py-6">
               Launch Canvas
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
