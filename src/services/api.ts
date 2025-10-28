@@ -308,6 +308,32 @@ class ApiClient {
   }
 
   // Utility methods
+  // Generic HTTP helpers (for stores/components needing raw endpoints)
+  async get<T = any>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+  async post<T = any>(endpoint: string, body?: any): Promise<T> {
+    const isFormData = body instanceof FormData;
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  async put<T = any>(endpoint: string, body?: any): Promise<T> {
+    const isFormData = body instanceof FormData;
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  async delete<T = any>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  // Convenience URL builders
   getAssetUrl(asset: Asset): string {
     if (asset.url.startsWith('http')) {
       return asset.url;
