@@ -312,6 +312,17 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                   src={apiClient.getThumbnailUrl(asset)}
                   alt={asset.name}
                   className="w-full h-full object-cover"
+                  onLoad={() => {
+                    console.log('✅ Library thumbnail loaded:', apiClient.getThumbnailUrl(asset));
+                  }}
+                  onError={(e) => {
+                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', apiClient.getThumbnailUrl(asset));
+                    // Fallback to main image if thumbnail fails to load
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== apiClient.getAssetUrl(asset)) {
+                      target.src = apiClient.getAssetUrl(asset);
+                    }
+                  }}
                 />
                 {aiGeneratedAssetIds.includes(asset.id) && (
                   <div className="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground">AI</div>
