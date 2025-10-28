@@ -37,6 +37,7 @@ class ApiClient {
     
     const headers: HeadersInit = {
       ...options.headers,
+      'ngrok-skip-browser-warning': 'true',
     };
 
     // Only set Content-Type for non-FormData requests
