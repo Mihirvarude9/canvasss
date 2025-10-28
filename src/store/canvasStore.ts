@@ -384,10 +384,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   
   // Asset actions
   loadAssets: async () => {
+    console.log('📚 loadAssets called, starting API request...');
     set({ isLoading: true, error: null });
     try {
+      console.log('🌐 Making API call to getAssets...');
       const response = await apiClient.getAssets();
+      console.log('📦 API response received:', response);
       if (response.success && response.data) {
+        console.log('✅ Assets loaded successfully:', response.data.data.length, 'assets');
         set({
           assets: response.data.data,
           isLoading: false,
@@ -397,7 +401,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         set({ error: response.error || 'Failed to load assets', isLoading: false });
       }
     } catch (error) {
+      console.error('❌ Error loading assets:', error);
       const errorMessage = error instanceof ApiError ? error.message : 'Failed to load assets';
+      console.error('❌ Setting error state:', errorMessage);
       set({ error: errorMessage, isLoading: false });
     }
   },

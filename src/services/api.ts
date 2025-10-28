@@ -28,6 +28,12 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('🌐 API Request:', {
+      url,
+      method: options.method || 'GET',
+      headers: options.headers,
+      body: options.body
+    });
     
     const headers: HeadersInit = {
       ...options.headers,
@@ -49,10 +55,16 @@ class ApiClient {
     };
 
     try {
+      console.log('📡 Making fetch request to:', url);
       const response = await fetch(url, config);
+      console.log('📡 Response status:', response.status, response.statusText);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
       const data = await response.json();
+      console.log('📡 Response data:', data);
 
       if (!response.ok) {
+        console.error('❌ API Error:', response.status, data);
         throw new ApiError(
           data.error || `HTTP ${response.status}`,
           response.status,
@@ -60,6 +72,7 @@ class ApiClient {
         );
       }
 
+      console.log('✅ API Request successful');
       return data;
     } catch (error) {
       if (error instanceof ApiError) {

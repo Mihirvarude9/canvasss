@@ -37,6 +37,8 @@ const Board = () => {
 
   useEffect(() => {
     // Load assets when component mounts
+    console.log('🚀 Board component mounted, loading assets...');
+    console.log('🌐 API URL:', import.meta.env.VITE_API_URL);
     loadAssets();
   }, [loadAssets]);
 
