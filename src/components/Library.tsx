@@ -314,12 +314,10 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 return aGen - bGen; // generated first
               })
               .map((asset) => {
-                const thumbnailUrl = apiClient.getThumbnailUrl(asset);
                 const mainImageUrl = apiClient.getAssetUrl(asset);
                 // Add cache-busting parameter to force fresh requests
-                const cacheBustedThumbnailUrl = `${thumbnailUrl}?v=${Date.now()}`;
                 const cacheBustedMainUrl = `${mainImageUrl}?v=${Date.now()}`;
-                console.log('🖼️ Rendering asset:', asset.name, 'thumbnail:', cacheBustedThumbnailUrl, 'main:', cacheBustedMainUrl);
+                console.log('🖼️ Rendering asset:', asset.name, 'main:', cacheBustedMainUrl);
                 return (
               <div
                 key={asset.id}
@@ -329,23 +327,18 @@ export const Library = ({ defaultTab = 'images' }: LibraryProps) => {
                 onClick={() => handleAddToCanvas(asset)}
               >
                 <img
-                  src={cacheBustedThumbnailUrl}
+                  src={cacheBustedMainUrl}
                   alt={asset.name}
                   className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
                   onLoad={() => {
-                    console.log('✅ Library thumbnail loaded:', cacheBustedThumbnailUrl);
+                    console.log('✅ Library image loaded:', cacheBustedMainUrl);
                   }}
                   onError={(e) => {
-                    console.warn('⚠️ Library thumbnail failed, falling back to main image:', cacheBustedThumbnailUrl);
+                    console.warn('⚠️ Library image failed to load:', cacheBustedMainUrl);
                     console.warn('⚠️ Error details:', e);
                     console.warn('⚠️ Error type:', e.type);
                     console.warn('⚠️ Error target:', e.target);
-                    // Fallback to main image if thumbnail fails to load
-                    const target = e.target as HTMLImageElement;
-                    console.log('🔄 Falling back to main image:', cacheBustedMainUrl);
-                    if (target.src !== cacheBustedMainUrl) {
-                      target.src = cacheBustedMainUrl;
-                    }
                   }}
                 />
                 {aiGeneratedAssetIds.includes(asset.id) && (
