@@ -13,71 +13,91 @@ import { ImageResizer } from '@/components/ImageResizer';
 import { CanvasModeSelector } from '@/components/CanvasModeSelector';
 import { MiniChatWindow } from '@/components/MiniChatWindow';
 
-// Utility function to load images with proper CORS handling
-const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
+// Utility function to convert image URL to base64
+const imageToBase64 = async (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
-    console.log('🖼️ Attempting to load image:', url);
-    
-    // First, try to load with CORS
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
-      console.log('✅ Image preloaded successfully with CORS:', url);
-      // Image loaded successfully with CORS, now create Fabric image
-      FabricImage.fromURL(url, {
-        crossOrigin: 'anonymous',
-      }).then((fabricImg) => {
-        console.log('✅ FabricImage created successfully:', url);
-        resolve(fabricImg);
-      }).catch((error) => {
-        console.error('❌ FabricImage.fromURL failed with CORS:', error);
-        // Fallback: try without CORS
-        FabricImage.fromURL(url, {
-          crossOrigin: undefined,
-        }).then((fabricImg) => {
-          console.log('✅ FabricImage created without CORS:', url);
-          resolve(fabricImg);
-        }).catch(reject);
-      });
-    };
-    
-    img.onerror = (error) => {
-      console.warn('⚠️ Image failed to load with CORS, trying without CORS...', error);
-      // Fallback: try without CORS
-      FabricImage.fromURL(url, {
-        crossOrigin: undefined,
-      }).then((fabricImg) => {
-        console.log('✅ FabricImage created without CORS fallback:', url);
-        resolve(fabricImg);
-      }).catch((error) => {
-        console.error('❌ FabricImage.fromURL failed without CORS:', error);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      try {
+        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(base64);
+      } catch (error) {
         reject(error);
-      });
+      }
     };
     
-    // Add a timeout to prevent hanging
-    const timeout = setTimeout(() => {
-      console.error('⏰ Image loading timeout:', url);
-      reject(new Error('Image loading timeout'));
-    }, 15000);
-    
-    // Clear timeout on success
-    const originalOnload = img.onload;
-    const originalOnerror = img.onerror;
-    
-    img.onload = (e) => {
-      clearTimeout(timeout);
-      originalOnload?.call(img, e);
-    };
-    
-    img.onerror = (e) => {
-      clearTimeout(timeout);
-      originalOnerror?.call(img, e);
+    img.onerror = () => {
+      // Fallback: try without CORS
+      const img2 = new Image();
+      img2.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        canvas.width = img2.width;
+        canvas.height = img2.height;
+        ctx.drawImage(img2, 0, 0);
+        
+        try {
+          const base64 = canvas.toDataURL('image/jpeg', 0.9);
+          resolve(base64);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      img2.onerror = () => reject(new Error('Image failed to load'));
+      img2.src = url;
     };
     
     img.src = url;
   });
+};
+
+// Utility function to load images with base64 conversion
+const loadImageWithCORS = async (url: string): Promise<FabricImage> => {
+  try {
+    console.log('🖼️ Attempting to load image:', url);
+    
+    // First try direct loading
+    try {
+      const fabricImg = await FabricImage.fromURL(url, {
+        crossOrigin: 'anonymous',
+      });
+      console.log('✅ FabricImage created directly with CORS:', url);
+      return fabricImg;
+    } catch (error) {
+      console.warn('⚠️ Direct loading failed, trying base64 conversion...', error);
+    }
+    
+    // Fallback: convert to base64 first
+    console.log('🔄 Converting image to base64...');
+    const base64 = await imageToBase64(url);
+    console.log('✅ Image converted to base64 successfully');
+    
+    const fabricImg = await FabricImage.fromURL(base64);
+    console.log('✅ FabricImage created from base64:', url);
+    return fabricImg;
+    
+  } catch (error) {
+    console.error('❌ All image loading methods failed:', error);
+    throw error;
+  }
 };
 
 export const Canvas = () => {
